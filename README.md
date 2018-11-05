@@ -2,19 +2,19 @@
 
 > This project is made using python and django
 
-intranet app has all basic models
-intranet app is the one where we have customized the django admin interface
-accounts has user modules and mail authentication part
+intranet app has all basic models<br>
+intranet app is the one where we have customized the django admin interface<br>
+accounts has user modules and mail authentication part<br>
 
 
 
 
 
-
-
-
-
-You can install Python-3.6 on Ubuntu 18.04 as follows:
+<br>
+<br>
+<br>
+<br>
+You can install Python-3.6 on Ubuntu 18.04 as follows:<br><br>
 
 wget https://www.python.org/ftp/python/3.6.3/Python-3.6.3.tgz
 tar xvf Python-3.6.3.tgz
