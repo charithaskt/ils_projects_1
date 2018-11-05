@@ -1,7 +1,9 @@
 # INTEGRATED LIBRARY MANAGEMENT SYSTEM__ILS
 
-This project is made using python and django
-
+> This project is made using python and django
+intranet app has all basic models
+intranet app is the one where we have customized the django admin interface
+accounts has user modules and mail authentication part
 
 
 
