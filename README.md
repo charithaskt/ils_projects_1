@@ -1,5 +1,16 @@
 # INTEGRATED LIBRARY MANAGEMENT SYSTEM__ILS
 
+This project is made using python and django
+
+
+
+
+
+
+
+
+
+
 You can install Python-3.6 on Ubuntu 18.04 as follows:
 
 wget https://www.python.org/ftp/python/3.6.3/Python-3.6.3.tgz
