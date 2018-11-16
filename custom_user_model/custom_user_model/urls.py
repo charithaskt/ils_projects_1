@@ -25,5 +25,6 @@ urlpatterns = [
     path('accounts/update/', views.edit_user, name='account_update'),
     path('accounts/profiles/', views.profiles_list, name='account_profiles'),
     path('accounts/profile/', views.profile_detail, name='profile_detail'),
+    path('staff/', include('intranet.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

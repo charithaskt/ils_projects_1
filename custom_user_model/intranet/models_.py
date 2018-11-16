@@ -3,6 +3,8 @@ from django.urls import reverse #Used to generate urls by reversing the URL patt
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from accounts.models import Profile
+from django.core.urlresolvers import reverse
+
 
 itemtype_choices = ( 
        ('BK', 'Book'),
@@ -146,6 +148,8 @@ class Departments(models.Model):
 
     def __str__(self):
         return "{} ({})".format(self.description, self.deptcode)
+
+
 
 class Designations(models.Model):
     designation = models.CharField(max_length=50,unique=True)
