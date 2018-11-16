@@ -1,14 +1,15 @@
 # accounts.forms.py
 from django import forms
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
-from verified_email_field.forms import VerifiedEmailField
+#from verified_email_field.forms import VerifiedEmailField
 from .models import User
 
 
 class RegisterForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
     password2 = forms.CharField(label='Confirm password', widget=forms.PasswordInput)
-    email = VerifiedEmailField(label='email',required=True)
+    #email = VerifiedEmailField(label='email',required=True)
+    email = forms.EmailField(label='email',required=True)
     fullname = forms.CharField(label='fullname',required=True)
     class Meta:
         model = User

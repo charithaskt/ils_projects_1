@@ -4,11 +4,12 @@ from .models import Departments, Designations, Borrowers, Categories
 from .models import SystemPreferences,PatronImages,Biblio,BiblioImages,Items,Suggestions
 from .models import Issues, Reserves, AccountLines, AccountOffsets, Statistics, Genre, Language
 from .models import Publisher,  Authors, CorporateAuthor,Holidays, ActionLogs, EntryExitLogs, ModeratorReasons
-from .models import Quotations, News, Stopwords, SearchHistory, IssuingRules, RentalCharges
-from .models import Tags, Comments 
+from .models import Quotations, News, Stopwords, SearchHistory, IssuingRules, RentalCharges, CollectionDepartments
+from .models import Tags, Comments, Suggestion, PatronPhotos 
  
 admin.site.register(SystemPreferences)
 admin.site.register(Departments)
+admin.site.register(CollectionDepartments)
 admin.site.register(Designations)
 admin.site.register(Categories)
 admin.site.register(Borrowers)
@@ -16,14 +17,14 @@ admin.site.register(PatronImages)
 
 @admin.register(Items) 
 class ItemsAdmin(admin.ModelAdmin):
-     list_display = ('itemnumber','barcode','biblionumber','itemstatus','booksellerid','price','notforloan','totalissues')
-     list_filter = ('itemstatus', 'notforloan','booksellerid','location')
+     list_display = ('itemnumber','barcode','biblionumber','itemstatus','booksellerid','price','notforloan','collectiondepartment','totalissues')
+     list_filter = ('itemstatus', 'notforloan','booksellerid','location','collectiondepartment')
      fieldsets = (
         ('Item', {
             'fields': ('biblionumber', 'replacementprice','totalissues')
         }),
         ('Availability', {
-            'fields': ('itemstatus', 'notforloan', 'location')
+            'fields': ('itemstatus', 'notforloan', 'location', 'collectiondepartment')
         }),
         ('Acquisition', {
             'fields': ('dateaccessioned', 'barcode','booksellerid','invoicenumber','invoicedate','price')
@@ -38,8 +39,8 @@ class BiblioAdmin(admin.ModelAdmin):
     list_display = ('itemtype','title', 'display_authors', 'copyrightdate','edition','publisher','display_genre')
     list_filter = ('itemtype','authors', 'publisher','copyrightdate','genre')
     fieldsets = (
-        ('Tilte', {
-            'fields': ('title','itemtype','authors', 'edition','corporateauthor','totalissues')
+        ('Title', {
+            'fields': ('title','itemtype','authors', 'edition','genre','corporateauthor','totalissues')
         }),
         ('Imprint', {
             'fields': ('publisher', 'copyrightdate','isbn','language','series','volume')
@@ -89,4 +90,6 @@ admin.site.register(RentalCharges)
 admin.site.register(IssuingRules)
 admin.site.register(Tags)
 admin.site.register(Comments)
+admin.site.register(Suggestion)
+admin.site.register(PatronPhotos)
 

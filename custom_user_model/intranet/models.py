@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from accounts.models import Profile
 from django.utils import timezone
+from datetime import datetime
 itemtype_choices = ( 
        ('BK', 'Book'),
        ('PR', 'Project Report'),
@@ -19,7 +20,6 @@ item_status_choices = (
        ('LO', 'Lost'),
        ('LP', 'Lost and Paid for'),
        ('MI', 'Missing'),
-       ('OD', 'Long Overdue'),
        ('WD', 'Withdrawn'),
        ('BD', 'In Bindery'),
 )
@@ -51,7 +51,7 @@ accounttype_choices = (
        ('FFOR', 'Forgiven Overdue Fine'),
        ('M', 'Sundry'),
        ('PAY', 'Payment'),
-       ('REP', 'Replacementi Charge'),
+       ('REP', 'Replacement Charge'),
        ('RES', 'Reserve Charge'),
        ('W', 'Written off'), 
        ('RENT', 'Rental Charge'),
@@ -69,16 +69,21 @@ module_choices = (
 
 action_choices = (
   ('CREATE', 'Create'),
-  ('ADD', 'Add child records'),
+  ('ADDCHILD', 'Add child record'),
+  ('MODCHILD', 'Modify child record'),
+  ('DELCHILD', 'Delete child record'),
   ('MODIFY', 'Modify or edit record'),
   ('ISSUE', 'Issue'),
   ('RETURN', 'Return'),
   ('RENEW', 'Renew'),
   ('DELETE', 'Delete'),
-  ('CHANGE PASS', 'Change Password Through Staff Client'),
-  ('RESERVE', 'RESERVE through Staff Client'),
-  ('FINE', 'Collect fine through Staff Client'),
+  ('CHANGE PASS', 'Change Password Through OPAC'),
+  ('RESERVE', 'Reserve'),
+  ('FINE', 'Collect fine'),
+  ('WRITEOFF', 'Write off fine'),
   ('RUN', 'Run report'),
+  ('RENEWSELF', 'Renew self'),
+  ('RESERVESELF', 'Reserve self'),
 )
 
 """
@@ -105,7 +110,6 @@ suggestions_status_choices = (
    ('ASKED', 'User asked'),
    ('ACCEPTED', 'Suggestion has been accepted'),
    ('REJECTED', 'Suggestion has been rejected'),
-   ('PENDING', 'Decision is kept pending'),
 ) 
 
 holiday_type_choices = (
@@ -147,6 +151,13 @@ class Departments(models.Model):
     def __str__(self):
         return "{} ({})".format(self.description, self.deptcode)
 
+class CollectionDepartments(models.Model):
+    deptcode = models.CharField(max_length=10, unique=True)
+    description = models.CharField(max_length=50)
+
+    def __str__(self):
+        return "{} ({})".format(self.description, self.deptcode)
+
 class Designations(models.Model):
     designation = models.CharField(max_length=50,unique=True)
     description = models.CharField(max_length=100)
@@ -171,7 +182,7 @@ class Borrowers(models.Model):
    dateexpiry = models.DateField()
    gonenoaddress = models.BooleanField(default=False)
    lost = models.BooleanField(default=False)
-   debarred = models.DateField(auto_now_add=True,blank=True, null=True)
+   debarred = models.DateField(blank=True, null=True)
    debarredcomment = models.CharField(max_length=100, blank=True, null=True)
    category = models.ForeignKey(Categories, on_delete=models.SET_NULL, null=True, blank=True)
    department = models.ForeignKey(Departments,on_delete=models.SET_NULL, null=True, blank=True)
@@ -187,6 +198,11 @@ class Borrowers(models.Model):
    def get_absolute_url(self):
         return reverse('borrower-detail', args=[self.id])
 
+   @property
+   def totalissues(self): 
+       issues = Issues.objects.filter(borrower_id=self.id, returned=False).count() 
+       return issues
+
 class PatronImages(models.Model):
    borrower = models.ForeignKey(Borrowers,on_delete=models.CASCADE)
    mimetype = models.CharField(max_length=15)
@@ -195,7 +211,9 @@ class PatronImages(models.Model):
 
 class Genre(models.Model):
     name = models.CharField(max_length=60, unique=True, help_text='Enter the topic')
-    
+    class Meta:
+        ordering = ['name',]
+ 
     def __str__(self):
         return self.name
 
@@ -204,18 +222,27 @@ class Language(models.Model):
     Model representing a Language (e.g. English, Telugu, Tamil, Kannda, etc.)
     """
     name = models.CharField(max_length=30, unique=True,help_text="Enter the book's natural language (e.g. English, French, Japanese etc.)")
+
+    class Meta:
+        ordering = ['name',]
+
     def __str__(self):
        return self.name
 
-
 class Publisher(models.Model):
     name = models.CharField(max_length=200, unique=True)
+
+    class Meta:
+        ordering = ('name',)
     
     def __str__(self):
         return self.name
 
 class CorporateAuthor(models.Model):
     name = models.CharField(max_length=200)
+
+    class Meta:
+        ordering = ('name',) 
     
     def __str__(self):
         return self.name
@@ -236,11 +263,12 @@ class Authors(models.Model):
     
     class Meta:
        unique_together = ('firstname', 'lastname',)
+       ordering = ('firstname','lastname',)
 
 class Biblio(models.Model):
     biblionumber = models.AutoField(primary_key=True)
     isbn = models.CharField('ISBN', max_length=13,null=True,blank=True)
-    language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True)
+    language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, blank=True)
     callnumber = models.CharField(max_length=15, blank=True, null=True)
     authors = models.ManyToManyField(Authors, blank=True,verbose_name="authors")
     corporateauthor = models.ForeignKey(CorporateAuthor, on_delete=models.SET_NULL, blank=True,null=True)
@@ -263,12 +291,31 @@ class Biblio(models.Model):
     totalissues = models.IntegerField(default=0, null=True, blank=True)  #system generated  
     timestamp_lastupdated = models.DateTimeField(auto_now=True) #system generated
     timestamp_added = models.DateTimeField(auto_now_add=True) #system generated
-
+    
+    class Meta:
+        ordering = ['title',]
+    '''
     def __str__(self):
         return "{} : {}".format(self.itemtype, self.title)
-
+    '''
+ 
+    def __str__(self):
+            return '%d, %s / BY (%s)' % (
+                self.biblionumber,
+                self.title, 
+                ', '.join(b.name for b in self.authors.all()) 
+                )
+    
     def get_absolute_url(self):
         return reverse('biblio-detail', args=[self.biblionumber])
+    
+    @property
+    def all_authors(self):
+        return '; '.join([x.name for x in self.authors.all()])
+
+    @property
+    def all_genres(self):
+        return '; '.join([x.name for x in self.genre.all()])
 
 class Items(models.Model):
     itemnumber = models.AutoField(primary_key=True)
@@ -284,6 +331,7 @@ class Items(models.Model):
     notforloan = models.CharField(max_length=1,choices=notforloan_choices,blank=True, null=True)  
     price  = models.DecimalField(decimal_places=2,max_digits=7, blank=True, null=True)
     replacementprice  = models.DecimalField(decimal_places=2,max_digits=7,blank=True, null=True)
+    collectiondepartment = models.ForeignKey(CollectionDepartments,on_delete=models.SET_NULL, null=True, blank=True)
     timestamp_lastupdated = models.DateTimeField(auto_now=True) #this field is set by the app
     timestamp_added = models.DateTimeField(auto_now_add=True)   #this field is set by the app
 
@@ -303,29 +351,21 @@ class BiblioImages(models.Model):
     def get_absolute_url(self):
        return reverse('biblioimage-detail', args=[self.imagenumber])
 
-class Issues(models.Model):
-   borrower = models.ForeignKey(Borrowers, on_delete=models.CASCADE)
-   itemnumber  = models.ForeignKey(Items, on_delete=models.CASCADE)
-   date_due = models.DateTimeField()
-   issuedate = models.DateTimeField(default=timezone.now)
-   renewals = models.PositiveSmallIntegerField(null=True, blank=True) #system sets this value
-   returndate = models.DateTimeField(auto_now_add=True, blank=True, null=True) #system sets this value
-   timestamp_lastupdated = models.DateTimeField(auto_now=True)
-
-  
-
 class Reserves(models.Model):
     reserveid = models.AutoField(primary_key=True)
     borrower = models.ForeignKey(Borrowers, on_delete=models.CASCADE)
     biblionumber = models.ForeignKey(Biblio, on_delete=models.CASCADE)
-    item = models.ForeignKey(Items, on_delete=models.CASCADE)
+    item = models.ForeignKey(Items, on_delete=models.CASCADE, null=True, blank=True)
     reservedate = models.DateTimeField(auto_now_add=True)
-    cancellationdate = models.DateTimeField(auto_now_add=True) 
+    cancellationdate = models.DateTimeField(null=True,blank=True) 
     priority = models.PositiveSmallIntegerField(null=True, blank=True)
     found = models.BooleanField(default=False)
-    notificationdate = models.DateTimeField(auto_now_add=True)
-    waitingdate = models.DateTimeField(auto_now_add=True)
+    notificationdate = models.DateTimeField(null=True, blank=True)
+    waitingdate = models.DateTimeField(null=True,blank=True)
     timestamp = models.DateTimeField(default=timezone.now) 
+    
+    def __str__(self):
+       return "{} ({}) - {}/{} - {}".format(self.borrower, self.reservedate, self.biblionumber,self.item,self.priority)
 
 
 #system automatically adds records to this table. No manual entry.
@@ -346,7 +386,9 @@ class EntryExitLogs(models.Model):
    borrower = models.ForeignKey(Borrowers, on_delete=models.CASCADE,null=True, blank=True)
    cardnumber = models.CharField(max_length=16, unique=True)
    timeofentry = models.DateTimeField(auto_now_add=True)
-   timeofexit = models.DateTimeField(auto_now_add=True)
+   timeofexit = models.DateTimeField(null=True, blank=True)
+   def __str__(self):
+       return "{} ({} - {})".format(self.cardnumber, self.timeofentry, self.timeofexit)
 
 #system generated records
 class ActionLogs(models.Model):
@@ -355,6 +397,8 @@ class ActionLogs(models.Model):
    usercode = models.ForeignKey(Borrowers,on_delete = models.CASCADE)
    module = models.CharField(max_length=17,choices=module_choices)
    action = models.CharField(max_length=11,choices=action_choices)
+   def __str__(self):
+       return "{} ({}) - {}/{}".format(self.usercode, self.timestamp.date(), self.module,self.action)
 
 class SystemPreferences(models.Model):
    variable = models.CharField(max_length=50,unique=True)
@@ -381,16 +425,22 @@ class SystemPreferences(models.Model):
 class ModeratorReasons(models.Model):
    reason = models.CharField(max_length=255)
 
+   class Meta:
+       ordering = ('reason',)
+
+   def __str__(self):
+      return self.reason
+
 class Suggestions(models.Model):
    suggestionid = models.AutoField(primary_key=True)
    suggestedby = models.ForeignKey(Borrowers,on_delete = models.CASCADE)
    suggesteddate = models.DateField(auto_now_add=True,blank=True,null=True)
    acceptedby = models.CharField(max_length=16, blank=True, null=True) #card number
    #acceptedby = models.IntegerField(blank=True, null=True)
-   accepteddate = models.DateField(auto_now_add=True,blank=True,null=True)
+   accepteddate = models.DateField(auto_now_add=True,blank=True,null=True) #no auto_now should be deliberately set
    rejectedby = models.CharField(max_length=16, blank=True,null=True) #card number
-   #rejectedby = models.IntegerField(blank=True, null=True)
-   rejecteddate = models.DateField(auto_now_add=True,blank=True,null=True)
+   #rejectedby = models.IntegerField(blank=True, null=True) 
+   rejecteddate = models.DateField(auto_now_add=True,blank=True,null=True) #no auto_now should be deliberately set
    status = models.CharField(max_length=8,choices=suggestions_status_choices, default='ASKED')
    note = models.TextField(blank=True,null=True)
    author = models.CharField(max_length=100,blank=True,null=True)
@@ -402,17 +452,10 @@ class Suggestions(models.Model):
    price = models.DecimalField(max_digits=6,decimal_places=2,blank=True,null=True)
    total = models.DecimalField(max_digits=7,decimal_places=2,blank=True,null=True)
 
-class Holidays(models.Model):
-   day = models.PositiveSmallIntegerField()
-   month = models.PositiveSmallIntegerField()
-   year = models.PositiveSmallIntegerField()
-   isexception = models.BooleanField(default=True)
-   title = models.CharField(max_length=100)
-   holiday_type = models.CharField(max_length=7,choices=holiday_type_choices)
-
-
 class Stopwords(models.Model):
-   word = models.CharField(max_length=255)
+   word = models.CharField(max_length=255, unique=True)
+   def __str__(self):
+      return self.word
 
 class SearchHistory(models.Model):
    user = models.ForeignKey(Profile, on_delete=models.CASCADE)
@@ -424,6 +467,9 @@ class Quotations(models.Model):
    source = models.CharField(max_length=255)
    text = models.CharField(max_length=1500)  
    timestamp = models.DateTimeField(auto_now_add=True)
+   def __str__(self):
+      return "{} :- {}".format(self.text, self.source)
+   
 
 class News(models.Model):
    title = models.CharField(max_length=250)
@@ -431,10 +477,20 @@ class News(models.Model):
    timestamp = models.DateTimeField(auto_now_add=True)
    expirationdate = models.DateField(null=True, blank=True)
    number = models.PositiveSmallIntegerField(null=True, blank=True)
+   
+   class Meta:
+      unique_together = ('title','number')
+      ordering = ['title']
+
+   def __str__(self):
+      return "{}:{} - ({}/{})".format(self.title, self.number,self.timestamp,
+          self.expirationdate)
 
 class RentalCharges(models.Model):
    itemtype = models.CharField(choices=itemtype_choices, max_length=2)
    rentalcharge =  models.DecimalField(decimal_places=2,max_digits=7, blank=True, null=True)
+   def __str__(self):
+      return "{} :- {}".format(self.itemtype, self.rentalcharge)
 
 class Tags(models.Model):
    biblionumber = models.ForeignKey(Biblio, on_delete=models.SET_NULL,null=True, blank=True) 
@@ -442,6 +498,12 @@ class Tags(models.Model):
    approved = models.NullBooleanField(null=True,blank=True)
    date_moderated = models.DateTimeField(auto_now_add=True,null=True, blank=True)
    approved_by = models.ForeignKey(Borrowers, on_delete=models.SET_NULL,null=True, blank=True)
+   
+   class Meta:
+      unique_together = ('tag','biblionumber')
+
+   def __str__(self):
+      return "{} :- {}".format(self.tag, self.biblionumber)
 
 class Comments(models.Model):
    biblionumber = models.ForeignKey(Biblio, on_delete=models.SET_NULL, null=True,blank=True) 
@@ -449,6 +511,12 @@ class Comments(models.Model):
    approved = models.NullBooleanField(null=True,blank=True)
    date_moderated = models.DateTimeField(auto_now_add=True,null=True, blank=True)
    approved_by = models.ForeignKey(Borrowers, on_delete=models.SET_NULL,null=True, blank=True)
+
+   class Meta:
+      unique_together = ('comment','biblionumber')
+
+   def __str__(self):
+      return "{} :- {}".format(self.tag, self.biblionumber)
 
 class IssuingRules(models.Model):
    categorycode = models.ForeignKey(Categories,on_delete=models.CASCADE)
@@ -513,4 +581,90 @@ class AccountOffsets(models.Model):
    borrower = models.OneToOneField(Borrowers, on_delete = models.CASCADE)
    amountoutstanding  = models.DecimalField(decimal_places=2,max_digits=7)
 
+class Holidays(models.Model):
+   date = models.DateField()
+   isexception = models.BooleanField(default=True)
+   title = models.CharField(max_length=100)
+   holiday_type = models.CharField(max_length=7,choices=holiday_type_choices)
 
+   def __str__(self):
+       return "{}/{}: {} ({})".format(self.holiday_type,self.title,self.date,self.date.strftime('%a'))
+
+class Suggestion(models.Model):
+   suggestionid = models.AutoField(primary_key=True)
+   suggestedby = models.ForeignKey(Borrowers,on_delete = models.CASCADE)
+   suggesteddate = models.DateTimeField(auto_now_add=True,blank=True,null=True)
+   #acceptedby = models.CharField(max_length=16, blank=True, null=True) #card number
+   acceptedby = models.IntegerField(blank=True, null=True)
+   accepteddate = models.DateTimeField(blank=True,null=True) #no auto_now should be deliberately set
+   #rejectedby = models.CharField(max_length=16, blank=True,null=True) #card number
+   rejectedby = models.IntegerField(blank=True, null=True) 
+   rejecteddate = models.DateTimeField(blank=True,null=True) #no auto_now should be deliberately set
+   status = models.CharField(max_length=8,choices=suggestions_status_choices, default='ASKED')
+   note = models.TextField(blank=True,null=True)
+   author = models.CharField(max_length=100,blank=True,null=True)
+   title  = models.CharField(max_length=255)
+   copyrightdate = models.PositiveSmallIntegerField(null=True, blank=True)
+   publishercode = models.CharField(max_length=100,blank=True,null=True)
+   isbn = models.CharField(max_length=13,blank=True,null=True)
+   reason = models.ForeignKey(ModeratorReasons,on_delete=models.SET_NULL,blank=True, null=True)
+   price = models.DecimalField(max_digits=6,decimal_places=2,blank=True,null=True)
+   total = models.DecimalField(max_digits=7,decimal_places=2,blank=True,null=True)
+   class Meta:
+       unique_together = ('title','suggestedby')
+
+   def __str__(self):
+       return "{} SUGGESTED BY {}: {}".format(self.title,self.suggestedby,self.status)
+
+
+class PatronPhotos(models.Model):
+    patron = models.OneToOneField(Borrowers, on_delete=models.CASCADE)
+    imageurl  = models.FileField(upload_to='images/patronimages')
+    class Meta:
+        ordering = ['patron__cardnumber']
+
+    def __str__(self):
+        return "{} - {}, {}".format(self.patron.cardnumber, self.patron.firstname, self.patron.surname)
+
+    def get_absolute_url(self):
+        return reverse('patronphoto-detail', args=[self.pk])
+
+
+'''
+class Biblios(models.Model):
+    biblionumber = models.AutoField(primary_key=True)
+    isbn = models.CharField('ISBN', max_length=13,null=True,blank=True)
+    language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True,blank=True, verbose_name="Script language")
+    callnumber = models.CharField(max_length=15, blank=True, null=True)
+    authors = models.ManyToManyField(Authors, blank=True,verbose_name="authors")
+    corporateauthor = models.ForeignKey(CorporateAuthor, on_delete=models.SET_NULL, null=True,blank=True, verbose_name="Institution Affiliation")
+    title = models.CharField(max_length=250)
+    edition = models.CharField(max_length=50, null=True, blank=True)
+    copyrightdate = models.PositiveSmallIntegerField(null=True, blank=True)
+    publisher = models.ForeignKey(Publisher, on_delete=models.SET_NULL,null=True, blank=True, verbose_name="Publication details")
+    series = models.CharField(max_length=250, null=True, blank=True)
+    volume = models.CharField(max_length=20, null=True, blank=True)
+    pages = models.CharField(max_length=10)
+    size  = models.CharField(max_length=5, null=True,blank=True)
+    genre = models.ManyToManyField(Genre,blank=True,verbose_name="Topical Term")
+    contents_url = models.URLField(max_length=200, blank=True, null=True)
+    index_url = models.URLField(max_length=200, blank=True, null=True)
+    itemtype = models.CharField(
+       max_length = 2,
+       choices = itemtype_choices,
+       default = 'BK',
+    ) 
+    totalissues = models.IntegerField(default=0, null=True, blank=True)  #system generated  
+    timestamp_lastupdated = models.DateTimeField(auto_now=True) #system generated
+    timestamp_added = models.DateTimeField(auto_now_add=True) #system generated
+
+    class Meta:
+        ordering = ['title',]
+  
+    def __str__(self):
+        return "{} : {}".format(self.itemtype, self.title)
+
+    def get_absolute_url(self):
+        return reverse('biblios-detail', args=[self.biblionumber])
+
+'''

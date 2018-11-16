@@ -7,9 +7,9 @@ urlpatterns = [
     path('author/add/', views.AuthorCreate.as_view(), name='author-add'),
     path('books/', views.BookListView.as_view(), name='books'),
     #path('book/<uuid:pk>', views.BookDetailView.as_view(), name='book-detail'),
-    re_path(r'^book/(?P<pk>\d+)$', views.book_detail_view, name='biblio-detail'),
+    re_path(r'^book/(?P<pk>\d+)/$', views.book_detail_view, name='biblio-detail'),
     path('authors/', views.AuthorListView.as_view(), name='authors'),
-    re_path(r'^author/(?P<pk>\d+)$', views.AuthorDetailView.as_view(), name='authors-detail'),
+    re_path(r'^author/(?P<pk>\d+)/$', views.AuthorDetailView.as_view(), name='authors-detail'),
 ]
 
 urlpatterns += [   
