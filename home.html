@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Home Page</title>
+
+  <!-- CSS  -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="css/materialize.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+  <link href="css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+</head>
+<body>
+
+
+<nav>
+<div class="nav-wrapper" style="background-color:violet">
+  <!--
+<a href="#" class="sidenav-trigger" data-target="mobile-links">
+-->
+<a href="#!" class="brand-logo"><i class="material-icons">menu</i>Online Library Management System</a>
+<ul class="right hide-on-med-and-down">
+  <li><div class="input-field">
+          <input id="search" type="search" required>
+          <label class="label-icon" for="search"><i class="material-icons">search</i></label>
+          <i class="material-icons">close</i>
+        </div></li>
+    <li><a href="collapsible.html" class="tooltipped" data-position="down" data-tooltip="Refresh"><i class="material-icons">refresh</i></a></li>
+  <li><a href="#!" class="tooltipped" data-position="down" data-tooltip="Info"><i class="material-icons">info_outline</i></a></li>
+  <li><a href="login.html">LogIn</a></li>
+  <li><a href="sign.html">Sign Up</a></li>
+  <li><a href="#!" class="tooltipped" data-position="left" data-tooltip="settings"><i class="material-icons">settings</i></a></li>
+
+<!--
+</ul>
+<ul class="sidenav" id="mobile-links">
+<li><a href="#">LogIn</li>
+<li><a href="#">Sign Up</li>
+<li><a href="#">Settings</li>
+</ul>
+-->
+</div>
+</nav>
+
+<div class="slider">
+    <ul class="slides">
+      <li>
+        <img src="lib4.jpeg"> <!-- random image -->
+        <div class="caption center-align">
+          <h3>This is our big Tagline!</h3>
+          <h5 class="light grey-text text-lighten-3">Here's our small slogan.</h5>
+        </div>
+      </li>
+      <li>
+        <img src="lib1.jpg"> <!-- random image -->
+        <div class="caption left-align">
+          <h3>Left Aligned Caption</h3>
+          <h5 class="light grey-text text-lighten-3">Here's our small slogan.</h5>
+        </div>
+      </li>
+      <li>
+        <img src="lib3.jpeg"> <!-- random image -->
+        <div class="caption right-align">
+          <h3>Right Aligned Caption</h3>
+          <h5 class="light grey-text text-lighten-3">Here's our small slogan.</h5>
+        </div>
+      </li>
+      <li>
+        <img src="lib1.jpg"> <!-- random image -->
+        <div class="caption center-align">
+          <h3>This is our big Tagline!</h3>
+          <h5 class="light grey-text text-lighten-3">Here's our small slogan.</h5>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <footer class="page-footer">
+            <div class="container">
+              <div class="row">
+                <div class="col l6 s12">
+                  <h5 class="white-text">Footer Content</h5>
+                  <p class="grey-text text-lighten-4">You can use rows and columns here to organize your footer content.</p>
+                </div>
+                <div class="col l4 offset-l2 s12">
+                  <h5 class="white-text">Links</h5>
+                  <ul>
+                    <li><a class="grey-text text-lighten-3" href="#!">Link 1</a></li>
+                    <li><a class="grey-text text-lighten-3" href="#!">Link 2</a></li>
+                    <li><a class="grey-text text-lighten-3" href="#!">Link 3</a></li>
+                    <li><a class="grey-text text-lighten-3" href="#!">Link 4</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="footer-copyright">
+              <div class="container">
+              © 2014 Copyright Text
+              <a class="grey-text text-lighten-4 right" href="#!">More Links</a>
+              </div>
+
+            </div>
+          </footer>
+
+
+
+  <!--  Scripts-->
+  <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script src="js/materialize.js"></script>
+  <script src="js/init.js"></script>
+  <script>
+  $(document).ready(function(){
+   $('.slider').slider();
+ });
+ $(document).ready(function(){
+    $('.tooltipped').tooltip();
+  });
+ $(document).ready(function(){
+   $('.sidenav').sidenav();
+ })
+</script>
+
+  </body>
+</html>
