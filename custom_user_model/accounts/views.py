@@ -13,7 +13,7 @@ def edit_user(request):
     user_form = ProfileForm(instance=user)
  
     #ProfileInlineFormset = inlineformset_factory(User, Profile, fields=('activation_key', 'key_expires'))
-    ProfileInlineFormset = inlineformset_factory(User, Profile, fields=('cardnumber','surname','firstname','sex','title','birth_date','mobile','address','address2','city','state','zipcode','country'))
+    ProfileInlineFormset = inlineformset_factory(User, Profile, fields=('userid','surname','firstname','sex','title','birth_date','mobile','address','address2','city','state','zipcode','country'))
     formset = ProfileInlineFormset(instance=user)
  
     if request.user.is_authenticated and request.user.id == user.id:
@@ -119,7 +119,7 @@ def activate(request, uidb64, token):
         #user.profile.email_confirmed = True
         user.email_confirmed = True
         user.save()
-        #login(request, user)
+        login(request, user)
         return redirect('account_update')
         #return HttpResponse('Thank you for your email confirmation. Now you can login your account.')
     else:

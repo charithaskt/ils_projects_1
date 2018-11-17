@@ -208,6 +208,6 @@ class BiblioTable(UsefulMixin,tables.Table):
         return 'Row %s' % str(next(self.counter) + 1)
 
     def value_copies(self, record):
-        item_count = Items.objects.filter(biblionumber_id=record.id).count()
+        item_count = Items.objects.filter(biblionumber_id=record.biblionumber).count()
         return str(item_count)
 
